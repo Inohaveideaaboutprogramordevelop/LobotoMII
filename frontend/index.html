@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LobotoMII — Wii Voice Studio</title>
+  <link rel="icon" href="images/Logo.png">
+  <style>
+    /* ── Reset & tokens ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sky-top:    #6EC6F0;
+      --sky-bot:    #C8E8F8;
+      --white:      #F8F8F8;
+      --gray:       #D0D0D0;
+      --dark:       #303030;
+      --blue:       #1A7FCC;
+      --blue-h:     #1460A0;
+      --blue-light: #D6EEF8;
+      --green:      #5CB85C;
+      --green-h:    #449D44;
+      --orange:     #E8930A;
+      --orange-h:   #C07808;
+      --panel:      #EEF6FC;
+      --red:        #CC3333;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--sky-bot);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      color: var(--dark);
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bot) 100%);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    header::before {
+      content: '';
+      position: absolute; right: 40px; top: -28px;
+      width: 110px; height: 110px; border-radius: 50%;
+      background: rgba(157,216,240,.45); pointer-events: none;
+    }
+    header::after {
+      content: '';
+      position: absolute; right: 100px; top: 14px;
+      width: 60px; height: 60px; border-radius: 50%;
+      background: rgba(170,221,244,.35); pointer-events: none;
+    }
+    header img.logo {
+      width: 48px; height: 48px; border-radius: 10px;
+      object-fit: contain; z-index: 1; flex-shrink: 0;
+    }
+    .header-text { z-index: 1; }
+    .header-text h1 {
+      font-size: clamp(1.3rem, 4vw, 1.9rem);
+      font-weight: 800; color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,.18);
+      line-height: 1.1;
+    }
+    .header-text p {
+      font-size: clamp(0.7rem, 2vw, 0.82rem);
+      color: #B0DCF0; margin-top: 2px;
+    }
+
+    /* ── Main layout ────────────────────────────────────── */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      padding: 12px;
+      align-items: start;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── Characters column ──────────────────────────────── */
+    .col-chars { min-width: 0; }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--dark);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 8px;
+    }
+
+    .tile-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 108px);
+      gap: 6px;
+    }
+
+    /* Tile */
+    .tile {
+      background: var(--white);
+      border: 2px solid var(--gray);
+      border-radius: 12px;
+      padding: 8px 4px 5px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      box-shadow: 0 2px 5px rgba(0,0,0,.07);
+      transition: border-color .14s, background .14s, transform .12s, box-shadow .14s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+    .tile:hover {
+      background: #E4F2FC;
+      border-color: #90C0E8;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 10px rgba(26,127,204,.14);
+    }
+    .tile.selected {
+      background: var(--blue-light);
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26,127,204,.22);
+    }
+    .tile:active { transform: translateY(0); }
+
+    .tile img {
+      width: 76px; height: 48px;
+      object-fit: contain; display: block;
+    }
+    .tile .tile-emoji {
+      font-size: 2.1rem; line-height: 1;
+      height: 48px; display: flex; align-items: center;
+    }
+    .tile .tile-label {
+      font-size: 0.68rem; font-weight: 700;
+      color: var(--dark); text-align: center;
+    }
+    .tile.selected .tile-label { color: var(--blue); }
+    .tile .tile-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--blue);
+      opacity: 0; transition: opacity .14s;
+    }
+    .tile.selected .tile-dot { opacity: 1; }
+
+    .preset-desc {
+      margin-top: 10px;
+      font-size: 0.77rem; font-style: italic;
+      color: var(--dark); line-height: 1.45;
+      max-width: 340px; min-height: 2.4em;
+    }
+
+    /* ── Controls panel ─────────────────────────────────── */
+    .col-controls {
+      background: var(--panel);
+      border: 2px solid var(--blue);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .divider {
+      height: 1px; background: var(--gray);
+      margin: -2px 0;
+    }
+
+    /* Textarea */
+    textarea {
+      width: 100%;
+      min-height: 76px;
+      max-height: 180px;
+      padding: 8px 10px;
+      border: 2px solid var(--blue);
+      border-radius: 8px;
+      background: var(--white);
+      color: var(--dark);
+      font-family: inherit;
+      font-size: 1rem;
+      resize: vertical;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      margin-top: 6px;
+    }
+    textarea:focus {
+      border-color: var(--blue-h);
+      box-shadow: 0 0 0 3px rgba(26,127,204,.15);
+    }
+
+    /* Sliders */
+    .sliders-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 20px;
+      margin-top: 6px;
+    }
+    .slider-row { display: flex; flex-direction: column; gap: 3px; }
+    .slider-header {
+      display: flex; justify-content: space-between; align-items: baseline;
+    }
+    .slider-label { font-size: 0.76rem; font-weight: 700; }
+    .slider-value {
+      font-size: 0.76rem; font-family: 'Consolas', monospace;
+      color: var(--blue); font-weight: 600;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 5px;
+      background: var(--gray); border-radius: 3px;
+      outline: none; cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--blue); cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,.22);
+      transition: background .13s, transform .1s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      background: var(--blue-h); transform: scale(1.18);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--blue); cursor: pointer; border: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,.22);
+    }
+    input[type=range]::-ms-thumb {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--blue); cursor: pointer; border: none;
+    }
+
+    /* Format buttons */
+    .fmt-row {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-top: 6px;
+    }
+    .fmt-btn {
+      padding: 5px 12px;
+      border: 2px solid var(--gray);
+      border-radius: 7px;
+      background: var(--white);
+      color: var(--dark);
+      font-family: inherit;
+      font-size: 0.75rem; font-weight: 700;
+      cursor: pointer;
+      transition: all .14s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .fmt-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .fmt-btn.active {
+      background: var(--blue-light);
+      border-color: var(--blue); color: var(--blue);
+    }
+
+    /* Action buttons */
+    .btn-row { display: flex; gap: 10px; }
+    .btn {
+      flex: 1;
+      min-width: 0;
+      padding: 11px 14px;
+      border: none; border-radius: 999px;
+      font-family: inherit;
+      font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 3px 7px rgba(0,0,0,.14);
+      transition: background .14s, transform .1s, box-shadow .14s, opacity .14s;
+      -webkit-tap-highlight-color: transparent;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .btn-play { background: var(--green); color: #fff; }
+    .btn-play:hover:not(:disabled) {
+      background: var(--green-h);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,.18);
+    }
+    .btn-save { background: var(--orange); color: #fff; }
+    .btn-save:hover:not(:disabled) {
+      background: var(--orange-h);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,.18);
+    }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+    .btn:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+      flex-shrink: 0;
+    }
+    .spinner.hidden { display: none; }
+
+    /* Audio player */
+    .audio-wrap { display: none; }
+    .audio-wrap.visible { display: block; }
+    audio { width: 100%; border-radius: 8px; outline: none; }
+
+    /* ── Status bar ──────────────────────────────────────── */
+    footer {
+      background: #C0DCF0;
+      padding: 6px 18px;
+      font-size: 0.8rem;
+      color: var(--dark);
+      flex-shrink: 0;
+    }
+    #status { transition: color .2s; }
+
+    /* ── Toast (first-load warning) ────────────────────── */
+    .toast {
+      position: fixed; bottom: 48px; left: 50%; transform: translateX(-50%);
+      background: rgba(26,127,204,.93); color: #fff;
+      padding: 10px 18px; border-radius: 10px;
+      font-size: 0.82rem; text-align: center;
+      max-width: 90vw; z-index: 99;
+      box-shadow: 0 4px 14px rgba(0,0,0,.22);
+      animation: fadeup .4s ease;
+      pointer-events: none;
+    }
+    @keyframes fadeup {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ── Responsive ─────────────────────────────────────── */
+    @media (max-width: 860px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+      .tile-grid {
+        grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+      }
+      .preset-desc { max-width: 100%; }
+    }
+
+    @media (max-width: 520px) {
+      header { padding: 10px 14px; gap: 10px; }
+      header img.logo { width: 38px; height: 38px; }
+      main { padding: 8px; gap: 8px; }
+      .col-controls { padding: 12px; gap: 12px; }
+      .tile-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+      }
+      .tile img { width: 100%; height: 38px; }
+      .sliders-grid { grid-template-columns: 1fr; }
+      .btn-row { flex-direction: column; }
+    }
+
+    @media (max-width: 340px) {
+      .tile-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img class="logo" src="images/Logo.png" alt="LobotoMII"
+         onerror="this.style.display='none'">
+    <div class="header-text">
+      <h1>LobotoMII</h1>
+      <p>Text-to-Speech estilo Mii · Wii Voice Studio</p>
+    </div>
+  </header>
+
+  <main>
+    <!-- ── Left: character picker ── -->
+    <section class="col-chars">
+      <p class="section-title">Personaje</p>
+      <div class="tile-grid" id="tileGrid"></div>
+      <p class="preset-desc" id="presetDesc"></p>
+    </section>
+
+    <!-- ── Right: controls ── -->
+    <section class="col-controls">
+
+      <div>
+        <p class="section-title">Texto a sintetizar</p>
+        <textarea id="textInput"
+                  placeholder="Escribe tu texto aquí..."
+                  maxlength="500">¡Hola! Soy tu Mii favorito.</textarea>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <p class="section-title">Ajustes de voz</p>
+        <div class="sliders-grid" id="slidersGrid"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <p class="section-title">Formato de exportación</p>
+        <div class="fmt-row" id="fmtRow"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-play" id="playBtn">
+          <div class="spinner hidden" id="playSpinner"></div>
+          <span id="playLabel">▶ Reproducir</span>
+        </button>
+        <button class="btn btn-save" id="saveBtn">
+          <div class="spinner hidden" id="saveSpinner"></div>
+          <span id="saveLabel">💾 Guardar</span>
+        </button>
+      </div>
+
+      <div class="audio-wrap" id="audioWrap">
+        <audio id="audioPlayer" controls></audio>
+      </div>
+
+    </section>
+  </main>
+
+  <footer>
+    <span id="status">Listo · Selecciona un personaje y escribe tu texto.</span>
+  </footer>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────
+// After deploying the backend on Render, paste its URL here:
+const API_URL = "https://lobotomii-api.onrender.com";
+
+// ── DATA ──────────────────────────────────────────────────────
+const PRESETS = {
+  default:   { desc:"Mii neutro — la voz clásica de Tomodachi Life",   icon:"😐", img:"Default.png",   st:7,   sp:130, ch:0.22, vi:0.012, br:0.35, vo:0.88 },
+  kawaii:    { desc:"Mii kawaii — aguda, alegre y expresiva",           icon:"😊", img:"Kawaii.png",    st:10,  sp:150, ch:0.28, vi:0.018, br:0.50, vo:0.88 },
+  grave:     { desc:"Mii adulto — grave, serio, pausado",               icon:"😤", img:"Grave.png",     st:3,   sp:115, ch:0.18, vi:0.008, br:0.20, vo:0.88 },
+  nino:      { desc:"Mii infantil — muy agudo y travieso",              icon:"😜", img:"Nino.png",      st:12,  sp:170, ch:0.30, vi:0.022, br:0.55, vo:0.85 },
+  robot:     { desc:"Mii robot — sintético con personalidad",           icon:"🤖", img:"Robot.png",     st:5,   sp:125, ch:0.05, vi:0.000, br:0.10, vo:0.85 },
+  susurro:   { desc:"Mii misterioso — suave y bajo",                    icon:"🤫", img:"Susurro.png",   st:5,   sp:105, ch:0.15, vi:0.008, br:0.08, vo:0.55 },
+  anciano:   { desc:"Mii anciano — ronco y lento",                      icon:"🧓", img:"Anciano.png",   st:2,   sp:100, ch:0.25, vi:0.020, br:0.15, vo:0.82 },
+  deportivo: { desc:"Mii deportivo — enérgico y directo",               icon:"💪", img:"Deportivo.png", st:6,   sp:160, ch:0.20, vi:0.010, br:0.45, vo:0.95 },
+  timido:    { desc:"Mii tímido — suave, dulce y pausado",              icon:"😳", img:"Timido.png",    st:8,   sp:110, ch:0.18, vi:0.014, br:0.22, vo:0.60 },
+  "gruñon":  { desc:"Mii gruñón — brusco y malhumorado",               icon:"😠", img:"Grunon.png",    st:1.5, sp:108, ch:0.12, vi:0.006, br:0.12, vo:0.90 },
+  bebe:      { desc:"Mii bebé — agudísimo y adorable",                  icon:"🍼", img:"Bebe.png",      st:14,  sp:145, ch:0.32, vi:0.025, br:0.60, vo:0.82 },
+};
+
+const SLIDERS = [
+  { key:"semitonos",    label:"Semitonos", min:0,   max:16,  step:0.5,   dec:1 },
+  { key:"espeak_speed", label:"Velocidad", min:80,  max:250, step:1,     dec:0 },
+  { key:"chorus",       label:"Chorus",    min:0,   max:1,   step:0.01,  dec:2 },
+  { key:"vibrato_amp",  label:"Vibrato",   min:0,   max:0.1, step:0.002, dec:3 },
+  { key:"brillo",       label:"Brillo",    min:0,   max:1,   step:0.01,  dec:2 },
+  { key:"volumen",      label:"Volumen",   min:0,   max:1,   step:0.01,  dec:2 },
+];
+
+const FORMATS = ["wav","mp3","ogg","opus","m4a","flac"];
+
+// ── STATE ─────────────────────────────────────────────────────
+let activePreset = "default";
+let activeFormat = "wav";
+let busy         = false;
+const sv = {};   // slider values
+
+// ── BUILD TILES ───────────────────────────────────────────────
+function buildTiles() {
+  const grid = document.getElementById("tileGrid");
+  for (const [name, data] of Object.entries(PRESETS)) {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.setAttribute("role", "button");
+    tile.setAttribute("tabindex", "0");
+    tile.dataset.preset = name;
+
+    const img = document.createElement("img");
+    img.src = `images/${data.img}`;
+    img.alt = name;
+    img.onerror = () => {
+      img.replaceWith(Object.assign(document.createElement("div"), {
+        className: "tile-emoji", textContent: data.icon
+      }));
+    };
+
+    const label = document.createElement("span");
+    label.className = "tile-label";
+    label.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+
+    const dot = document.createElement("div");
+    dot.className = "tile-dot";
+
+    tile.append(img, label, dot);
+    tile.addEventListener("click", () => selectPreset(name));
+    tile.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" ") selectPreset(name); });
+    grid.appendChild(tile);
+  }
+}
+
+// ── BUILD SLIDERS ─────────────────────────────────────────────
+function buildSliders() {
+  const grid = document.getElementById("slidersGrid");
+  for (const s of SLIDERS) {
+    const row = document.createElement("div");
+    row.className = "slider-row";
+
+    const hdr = document.createElement("div");
+    hdr.className = "slider-header";
+
+    const lbl = Object.assign(document.createElement("span"), {
+      className: "slider-label", textContent: s.label
+    });
+    const val = Object.assign(document.createElement("span"), {
+      className: "slider-value", id: `val-${s.key}`
+    });
+    hdr.append(lbl, val);
+
+    const inp = document.createElement("input");
+    inp.type = "range"; inp.id = `sl-${s.key}`;
+    inp.min = s.min; inp.max = s.max; inp.step = s.step;
+    inp.addEventListener("input", () => {
+      sv[s.key] = parseFloat(inp.value);
+      val.textContent = sv[s.key].toFixed(s.dec);
+    });
+
+    row.append(hdr, inp);
+    grid.appendChild(row);
+  }
+}
+
+// ── BUILD FORMAT BUTTONS ──────────────────────────────────────
+function buildFormats() {
+  const row = document.getElementById("fmtRow");
+  for (const fmt of FORMATS) {
+    const btn = Object.assign(document.createElement("button"), {
+      className: "fmt-btn" + (fmt==="wav" ? " active" : ""),
+      textContent: fmt.toUpperCase()
+    });
+    btn.dataset.fmt = fmt;
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".fmt-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeFormat = fmt;
+    });
+    row.appendChild(btn);
+  }
+}
+
+// ── SELECT PRESET ─────────────────────────────────────────────
+function selectPreset(name) {
+  activePreset = name;
+  document.querySelectorAll(".tile").forEach(t =>
+    t.classList.toggle("selected", t.dataset.preset === name));
+
+  const d = PRESETS[name];
+  document.getElementById("presetDesc").textContent = `${d.icon}  ${d.desc}`;
+
+  const vals = { semitonos:d.st, espeak_speed:d.sp, chorus:d.ch,
+                 vibrato_amp:d.vi, brillo:d.br, volumen:d.vo };
+  for (const s of SLIDERS) {
+    const inp = document.getElementById(`sl-${s.key}`);
+    const vel = document.getElementById(`val-${s.key}`);
+    const v   = vals[s.key];
+    inp.value = v; sv[s.key] = v;
+    vel.textContent = v.toFixed(s.dec);
+  }
+}
+
+// ── STATUS ────────────────────────────────────────────────────
+function setStatus(msg, color) {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.style.color = color || "";
+}
+
+// ── BUSY STATE ────────────────────────────────────────────────
+function setBusy(state, spinId, labelId, labelText) {
+  busy = state;
+  document.getElementById("playBtn").disabled = state;
+  document.getElementById("saveBtn").disabled = state;
+  document.getElementById(spinId).classList.toggle("hidden", !state);
+  document.getElementById(labelId).textContent = labelText;
+}
+
+// ── API CALL ──────────────────────────────────────────────────
+async function callAPI(formato) {
+  const texto = document.getElementById("textInput").value.trim();
+  if (!texto) { setStatus("⚠ Escribe algo primero.", "#E8930A"); return null; }
+
+  const body = { texto, preset: activePreset, formato, ...sv };
+
+  // Show slow-start hint after 5 s (Render free tier cold start)
+  let toastEl = null;
+  const toastTimer = setTimeout(() => {
+    toastEl = document.createElement("div");
+    toastEl.className = "toast";
+    toastEl.textContent = "El servidor tarda ~30 s en arrancar la primera vez. Por favor espera…";
+    document.body.appendChild(toastEl);
+  }, 5000);
+
+  try {
+    const res = await fetch(`${API_URL}/synthesize`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || `Error ${res.status}`);
+    }
+    return await res.blob();
+  } finally {
+    clearTimeout(toastTimer);
+    if (toastEl) toastEl.remove();
+  }
+}
+
+// ── PLAY ──────────────────────────────────────────────────────
+async function onPlay() {
+  if (busy) return;
+  setBusy(true, "playSpinner", "playLabel", "Procesando…");
+  setStatus("Sintetizando audio…", "var(--blue)");
+  try {
+    const blob = await callAPI("wav");
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const player = document.getElementById("audioPlayer");
+    player.src = url;
+    document.getElementById("audioWrap").classList.add("visible");
+    setStatus("▶ Reproduciendo…", "var(--green)");
+    await player.play();
+    player.onended = () => setStatus("Listo.", "");
+  } catch(e) {
+    setStatus(`❌ ${e.message}`, "var(--red)");
+  } finally {
+    setBusy(false, "playSpinner", "playLabel", "▶ Reproducir");
+  }
+}
+
+// ── SAVE ──────────────────────────────────────────────────────
+async function onSave() {
+  if (busy) return;
+  setBusy(true, "saveSpinner", "saveLabel", "Generando…");
+  setStatus(`Generando ${activeFormat.toUpperCase()}…`, "var(--orange)");
+  try {
+    const blob = await callAPI(activeFormat);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement("a"), {
+      href: url,
+      download: `mii_${activePreset}.${activeFormat}`
+    });
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatus(`💾 Guardado como mii_${activePreset}.${activeFormat}`, "var(--green)");
+  } catch(e) {
+    setStatus(`❌ ${e.message}`, "var(--red)");
+  } finally {
+    setBusy(false, "saveSpinner", "saveLabel", "💾 Guardar");
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+buildTiles();
+buildSliders();
+buildFormats();
+selectPreset("default");
+
+document.getElementById("playBtn").addEventListener("click", onPlay);
+document.getElementById("saveBtn").addEventListener("click", onSave);
+</script>
+</body>
+</html>
