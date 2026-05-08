@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: lobotomii-api
+    runtime: docker
+    rootDir: web/backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
